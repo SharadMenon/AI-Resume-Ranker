@@ -1,0 +1,1 @@
+We are looking for a Python developer with experience in machine learning, data analysis, and NLP. Familiarity with frameworks like TensorFlow or PyTorch is a plus.

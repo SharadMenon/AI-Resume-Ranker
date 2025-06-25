@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Resume Ranker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>Upload Resumes and Job Description</h2>
+
+    <form method="POST" enctype="multipart/form-data" onsubmit="showLoading()">
+        <textarea name="job_description" rows="10" cols="50" placeholder="Paste job description here..." required></textarea><br><br>
+
+        <!-- Properly labeled file input -->
+        <label class="file-input-label" for="resume-files">
+            <div style="background: #3c3c7c; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer;">
+                Click to select resume files
+            </div>
+        </label>
+        <input type="file" name="resumes" id="resume-files" multiple required style="display: none;"><br><br>
+
+        <button type="submit">RANK RESUMES</button>
+    </form>
+
+    <div id="loading" style="display: none; color: violet; margin-top: 10px;">Ranking in progress...</div>
+
+    {% if resumes %}
+        <h3>Ranked Resumes:</h3>
+        <ol>
+            {% for resume in resumes %}
+                <li>{{ resume[0] }} - Score: {{ resume[1] }}</li>
+            {% endfor %}
+        </ol>
+    {% endif %}
+
+    <script>
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        // Proper event binding
+        document.getElementById('resume-files').addEventListener('change', function(e) {
+            const label = document.querySelector('.file-input-label');
+            const fileCount = e.target.files.length;
+
+            if (fileCount > 0) {
+                label.innerHTML = `
+                    <div style="color: #10b981;">✅ ${fileCount} file${fileCount > 1 ? 's' : ''} selected</div>
+                    <div style="font-size: 14px; color: #94a3b8; margin-top: 5px;">
+                        Click again to change selection
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
