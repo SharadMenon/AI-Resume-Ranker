@@ -1,53 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AI Resume Ranker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Ranker | Smart ATS Candidate Ranking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h2>Upload Resumes and Job Description</h2>
+    <div class="background-glow"></div>
+    <div class="container">
+        <header class="app-header">
+            <div class="badge-pill">⚡ Powered by Sentence-Transformers & NLP</div>
+            <h1>AI Resume Ranker</h1>
+            <p class="subtitle">Evaluate and rank resumes with deep semantic understanding & skill extraction</p>
+        </header>
 
-    <form method="POST" enctype="multipart/form-data" onsubmit="showLoading()">
-        <textarea name="job_description" rows="10" cols="50" placeholder="Paste job description here..." required></textarea><br><br>
-
-        <!-- Properly labeled file input -->
-        <label class="file-input-label" for="resume-files">
-            <div style="background: #3c3c7c; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer;">
-                Click to select resume files
+        <form method="POST" enctype="multipart/form-data" id="rankForm" onsubmit="showLoading()">
+            <div class="form-section">
+                <label class="section-label">
+                    <span class="step-num">1</span>
+                    <span>Paste Job Description</span>
+                </label>
+                <div class="textarea-wrapper">
+                    <textarea name="job_description" id="job_description" rows="8" placeholder="Paste the job requirements, responsibilities, and qualifications here..." required></textarea>
+                </div>
             </div>
-        </label>
-        <input type="file" name="resumes" id="resume-files" multiple required style="display: none;"><br><br>
 
-        <button type="submit">RANK RESUMES</button>
-    </form>
+            <div class="form-section">
+                <label class="section-label">
+                    <span class="step-num">2</span>
+                    <span>Upload Resumes (PDF)</span>
+                </label>
+                <div class="file-drop-area" id="dropArea">
+                    <input type="file" name="resumes" id="resume-files" multiple required accept=".pdf">
+                    <div class="drop-content" id="dropContent">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-text"><strong>Choose PDF resumes</strong> or drag & drop here</div>
+                        <div class="upload-hint">Supports multiple files simultaneously</div>
+                    </div>
+                </div>
+            </div>
 
-    <div id="loading" style="display: none; color: violet; margin-top: 10px;">Ranking in progress...</div>
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span>Rank Resumes Intelligently</span>
+                <span class="btn-arrow">→</span>
+            </button>
+        </form>
 
-    {% if resumes %}
-        <h3>Ranked Resumes:</h3>
-        <ol>
-            {% for resume in resumes %}
-                <li>{{ resume[0] }} - Score: {{ resume[1] }}</li>
-            {% endfor %}
-        </ol>
-    {% endif %}
+        <div id="loading" class="loading-container" style="display: none;">
+            <div class="spinner"></div>
+            <h3>Analyzing Resumes & Semantic Matching...</h3>
+            <p>Computing neural sentence embeddings and matching skill taxonomy</p>
+        </div>
+
+        {% if resumes %}
+            <section class="results-section">
+                <div class="results-header">
+                    <h2>Ranking Results ({{ resumes|length }} Candidate{{ 's' if resumes|length > 1 else '' }})</h2>
+                    <span class="sorted-badge">Sorted by Match Score</span>
+                </div>
+
+                <div class="candidates-list">
+                    {% for resume in resumes %}
+                        <div class="candidate-card rank-{{ loop.index }}">
+                            <div class="card-header">
+                                <div class="candidate-info">
+                                    <span class="rank-badge">#{{ loop.index }}</span>
+                                    <div class="filename-group">
+                                        <h3 class="filename">{{ resume.filename }}</h3>
+                                        <span class="match-level-badge" style="background: {{ resume.badge_color }}20; color: {{ resume.badge_color }}; border: 1px solid {{ resume.badge_color }}40;">
+                                            {{ resume.match_level }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="score-display">
+                                    <div class="score-number" style="color: {{ resume.badge_color }};">{{ resume.score }}%</div>
+                                    <div class="score-label">Overall Match</div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Score Bar -->
+                            <div class="progress-bar-container">
+                                <div class="progress-fill" style="width: {{ resume.score }}%; background: linear-gradient(90deg, #7c3aed, {{ resume.badge_color }});"></div>
+                            </div>
+
+                            <!-- Score Breakdown -->
+                            <div class="score-breakdown">
+                                <div class="breakdown-item">
+                                    <span class="item-label">Semantic Relevance</span>
+                                    <span class="item-value">{{ resume.semantic_score }}%</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="item-label">Skill & Category Match</span>
+                                    <span class="item-value">{{ resume.skill_score }}%</span>
+                                </div>
+                            </div>
+
+                            <!-- Skills Analysis -->
+                            <div class="skills-analysis">
+                                {% if resume.matched_skills %}
+                                    <div class="skills-block">
+                                        <div class="skills-heading matched-heading">
+                                            <span>✅ Matched Skills & Qualifications ({{ resume.matched_skills|length }})</span>
+                                        </div>
+                                        <div class="tags-container">
+                                            {% for skill in resume.matched_skills %}
+                                                <span class="skill-tag matched-tag">{{ skill }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                {% if resume.missing_skills %}
+                                    <div class="skills-block">
+                                        <div class="skills-heading missing-heading">
+                                            <span>💡 Recommended / Missing from JD ({{ resume.missing_skills|length }})</span>
+                                        </div>
+                                        <div class="tags-container">
+                                            {% for skill in resume.missing_skills %}
+                                                <span class="skill-tag missing-tag">{{ skill }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </div>
 
     <script>
         function showLoading() {
             document.getElementById('loading').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').style.opacity = '0.6';
         }
 
-        // Proper event binding
-        document.getElementById('resume-files').addEventListener('change', function(e) {
-            const label = document.querySelector('.file-input-label');
-            const fileCount = e.target.files.length;
+        const fileInput = document.getElementById('resume-files');
+        const dropContent = document.getElementById('dropContent');
 
-            if (fileCount > 0) {
-                label.innerHTML = `
-                    <div style="color: #10b981;">✅ ${fileCount} file${fileCount > 1 ? 's' : ''} selected</div>
-                    <div style="font-size: 14px; color: #94a3b8; margin-top: 5px;">
-                        Click again to change selection
-                    </div>
+        fileInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                let fileNames = [];
+                for (let i = 0; i < Math.min(files.length, 3); i++) {
+                    fileNames.push(files[i].name);
+                }
+                const extra = files.length > 3 ? ` + ${files.length - 3} more` : '';
+                
+                dropContent.innerHTML = `
+                    <div class="upload-icon">✅</div>
+                    <div class="upload-text" style="color: #10b981;"><strong>${files.length} resume${files.length > 1 ? 's' : ''} selected</strong></div>
+                    <div class="upload-hint" style="color: #cbd5e1;">${fileNames.join(', ')}${extra}</div>
                 `;
             }
         });
